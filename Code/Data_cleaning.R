@@ -3,7 +3,7 @@
 library(tidyverse)
 library(ipumsr)
 library(dplyr)
-library(data.table)
+library(rio)
 
 # Read the IPUMS data 
 
@@ -43,3 +43,5 @@ final_data <- final_data %>%
          "Received_Pay_COVID-19" = COVIDPAID)
 
 
+# Export the clean data for analysis into a csv file
+rio::export(final_data, "Covid19_Retail_Employment.csv")
