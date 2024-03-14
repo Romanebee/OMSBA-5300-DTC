@@ -61,7 +61,7 @@ summary_data <- final_data %>%
   group_by(Year, Month, Year_month) %>%
   summarize(RetailEmployment = sum(Industry == 'Retail Trade'))
 
-# Setting up the dates before and after Covid (Mmarch is not considered as Covid based on employment)
+# Setting up the dates before and after Covid (March is not considered as Covid based on employment)
 
 final_data$COVID_Indicator <- ifelse(final_data$Year_month >= "2020-04" & final_data$Year_month <= "2021-06", 1, 0)
 
