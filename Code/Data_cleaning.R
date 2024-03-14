@@ -47,17 +47,28 @@ final_data <- final_data %>%
 final_data$Year_month <- paste0(final_data$Year, "-", final_data$Month)
 final_data <- final_data %>% filter(Year >= 2019 & Year <= 2021)
 
-# Group by and summarize summary_data <- final_data %>%
+# Categorize employment status as employed or unemployed based on the value 
+categorize_status <- function(status) {
+  case_when(
+    status %in% c(10, 12) ~ "Employed",
+    status == 21 ~ "Unemployed",
+    TRUE ~ "Other"
+  )
+}
+
+# Apply the categorize_status function to the Employment_Status column
+final_data$Employment_Status_Label <- categorize_status(final_data$Employment_Status)
+
+# Group by Year, Month, and Year_month, then summarize retail employment
 summary_data <- final_data %>%
   group_by(Year, Month, Year_month) %>%
   summarize(RetailEmployment = sum(Industry == 'Retail Trade'))
 
-# Setting up the dates before and after Covid (March is not considered Covid based on employment)
+# Setting up the dates before and after Covid (Mmarch is not considered as Covid based on employment)
 
 final_data$COVID_Indicator <- ifelse(final_data$Year_month >= "2020-04" & final_data$Year_month <= "2021-06", 1, 0)
 
-# Look at a summary of the data
-head(summary_data)
+# Get a summary of the final data 
 
 # Export the clean data for analysis into a csv file
 rio::export(final_data, "Covid19_Retail_Employment.csv")
