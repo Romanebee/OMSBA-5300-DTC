@@ -17,10 +17,7 @@ data <- read_ipums_micro(ddi)
 
 indnames <- rio::import("../OMSBA 5300 Data Translation Challenge/indnames.csv")
 
-indnames_filtered <- indnames %>%
-  filter(indname == 'Retail Trade')
-
-merged_data <- inner_join(indnames_filtered, data, by= c("ind" = "IND"))
+merged_data <- inner_join(indnames, data, by= c("ind" = "IND"))
 
 # Drop unnecessary variables
 final_data <- merged_data %>%
