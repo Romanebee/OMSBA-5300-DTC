@@ -1,1 +1,1 @@
-The processed data is empty because the data files are too large.
+The processed data folder is empty because the data files are too large.
