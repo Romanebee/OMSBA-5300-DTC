@@ -15,8 +15,8 @@ library(fixest)
 library(ggplot2)
 
 # Import the data sets needed for the analyses
-employment_data <- rio::import("../OMSBA 5300 Data Translation Challenge/Processed_Data/Covid19_Retail_Employment.csv")
-indnames <- rio::import("../OMSBA 5300 Data Translation Challenge/indnames.csv")
+employment_data <- rio::import("../Processed_Data/Covid19_Retail_Employment.csv")
+indnames <- rio::import("../indnames.csv")
 ```
 
 This analysis observes the effect of the COVID-19 pandemic on different industries measured by employment. There is a greater focus on the retail industry as it was one of the industries most affected by the economic consequences of lockdowns due to COVID-19. For this analysis, we considered any time before April of 2020 to be pre-COVID, and any time after March onward to be post-COVID. We did not consider March to be a part of the pandemic because COVID-19 was declared a national emergency on March 14th, 2020 and lockdowns were imposed officially during the first week of April. A lot of industries operated normally until the first lockdowns.
@@ -38,7 +38,7 @@ retail_employment$Employment_Category <- ifelse(retail_employment$Employment_Sta
 summary(retail_employment$Employment_Category)
 retail_employment %>%
   group_by(COVID_Indicator) %>%
-  summarize(mean_employment_status = mean(Employment_Category, na.rm = TRUE))
+  summarize(mean_employment_status = mean(Employment_Category, na.rm = TRUE),.options = list(tempfile=FALSE))
 
 # Create a bar plot
 ggplot(retail_employment, aes(x = factor(COVID_Indicator), y = Employment_Category)) +
@@ -133,3 +133,7 @@ summary(m3)
 The coefficient related to "Worker_Class" are especially important in this analysis. The coefficients for the different categories represent the change in the log odds of being employed for each class. We can see that Worker_Class22 is the only a negative coefficient. It is equal to -0.1945, suggesting lower odds of employment during the pandemic for employees of private, for profit companies. Moreover, self-employed workers had greater odds of being employed during the pandemic as suggested by the coefficient for Worker_Class14, equal to 1.274.
 
 Overall, the pandemic was associated with better monetary outcomes for the self-employed employees.
+
+# Conclusion
+
+In conclusion, COVID-19 has had a negative effect on employment when it relates to the retail industry. As found in the analysis findings, the retail industry experienced lower employment during the pandemic, even when compared to other industries.
