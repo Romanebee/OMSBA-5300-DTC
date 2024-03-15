@@ -2,6 +2,7 @@
 library(tidyverse)
 library(rio)
 library(fixest)
+library(lme4)
 library(ggplot2)
 
 # Import the data sett needed for the analyses
@@ -62,3 +63,12 @@ etable(m_did)
 
 # Question 3 - Retail needs to worry about who has money to spend - what has changed about who is working and earning money?
 
+employment_data$State <- as.factor(employment_data$State)
+employment_data$Worker_Class <- as.factor(employment_data$Worker_Class)
+employment_data$COVID_Indicator <- as.factor(employment_data$COVID_Indicator)
+
+# Logistic regression model
+m3 <- glm(Employment_Category ~ COVID_Indicator + Age + Worker_Class, data = employment_data, family = "binomial")
+
+# Summary of the model to inspect coefficients and statistical significance
+summary(m3)
