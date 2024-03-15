@@ -1,0 +1,135 @@
+---
+title: "The Effect of Covid-19 on the Retail Industry"
+format: html
+editor: visual
+author: Daniel Aina, Romane Beeharry, Victor MacEdo, Fernando Yeung
+---
+
+## The Data
+
+```{r}
+# Load the necessary libraries for the regression analyses
+library(tidyverse)
+library(rio)
+library(fixest)
+library(ggplot2)
+
+# Import the data sets needed for the analyses
+employment_data <- rio::import("../OMSBA 5300 Data Translation Challenge/Processed_Data/Covid19_Retail_Employment.csv")
+indnames <- rio::import("../OMSBA 5300 Data Translation Challenge/indnames.csv")
+```
+
+This analysis observes the effect of the COVID-19 pandemic on different industries measured by employment. There is a greater focus on the retail industry as it was one of the industries most affected by the economic consequences of lockdowns due to COVID-19. For this analysis, we considered any time before April of 2020 to be pre-COVID, and any time after March onward to be post-COVID. We did not consider March to be a part of the pandemic because COVID-19 was declared a national emergency on March 14th, 2020 and lockdowns were imposed officially during the first week of April. A lot of industries operated normally until the first lockdowns.
+
+### How has COVID affected the health of the retail industry, as measured by employment?
+
+To observe the effect of COVID on the health of the retail industry, we first created a data frame "retail_employment" that filtered the data solely to the retail industry to base our regression on.
+
+```{r}
+# Create a filtered data frame for the retail industry
+retail_data <- indnames %>%
+  filter(indname == 'Retail Trade')
+
+retail_employment <- inner_join(retail_data, employment_data, by= c("ind" = "Industry_code"))
+
+# Convert Employment_Status to a categorical variable
+retail_employment$Employment_Category <- ifelse(retail_employment$Employment_Status %in% c(10, 12), TRUE, FALSE)
+
+summary(retail_employment$Employment_Category)
+retail_employment %>%
+  group_by(COVID_Indicator) %>%
+  summarize(mean_employment_status = mean(Employment_Category, na.rm = TRUE))
+
+# Create a bar plot
+ggplot(retail_employment, aes(x = factor(COVID_Indicator), y = Employment_Category)) +
+  geom_bar(stat = "summary", fun = "mean", fill = "skyblue", alpha = 0.7) +
+  labs(x = "COVID Indicator", y = "Mean Employment Status") +
+  ggtitle("Mean Employment Status by COVID Indicator") +
+  theme_minimal()
+```
+
+To address the impact of COVID-19 on the retail industry's employment, we employed a fixed effects ordinary least squares (FEOLS) regression model. In this model, the variable "Employment_Category" serves as the dependent variable, representing employment status within the retail sector. The independent variable of interest is "Covid_Indicator," a binary variable denoting whether the observation period falls within the COVID-19 era or not.
+
+Firstly, we categorized the employment status into binary values: TRUE for employed individuals and FALSE for unemployed ones, focusing solely on employment within the retail industry. This categorization allowed us to isolate the effect of employment changes specifically within this sector.
+
+The "Covid_Indicator" variable distinguishes between periods before and during the COVID-19 pandemic, with a value of 1 indicating observations post-March 2020 and 0 representing pre-pandemic times.
+
+```{r}
+m1 <- feols(Employment_Category ~ COVID_Indicator, data = retail_employment)
+
+etable(m1, vcov = 'hetero')
+```
+
+The regression results, summarized in the table above indicate a statistically significant negative coefficient for the "Covid_Indicator" variable (-0.0276, p \< 0.001). This coefficient suggests that, on average, employment within the retail industry decreased during the COVID-19 pandemic compared to pre-pandemic periods.
+
+Furthermore, employing robust standard errors confirms the stability of the coefficient estimates, considering potential heteroskedasticity in the data. The robust standard errors are calculated using the heteroskedasticity-robust covariance matrix.
+
+```{r}
+# Predict the probabilities for the regression
+retail_employment$predicted_prob <- predict(m1, type = "response")
+
+# Create a scatter plot with a fitted line
+ggplot(retail_employment, aes(x = COVID_Indicator, y = predicted_prob)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(x = "COVID Indicator", y = "Predicted Probability of Employment") +
+  ggtitle("Predicted Probability of Employment vs. COVID Indicator") +
+  theme_minimal()
+```
+
+Additionally, we visualized the relationship between the COVID-19 indicator and the predicted probability of employment within the retail industry. The scatter plot illustrates a downward trend in employment probability during the pandemic period, supporting the regression findings.
+
+Overall, our analysis highlights a significant negative impact of the COVID-19 pandemic on employment levels within the retail sector.
+
+## How has retail fared relative to other industries?
+
+To compare how COVID-19 impacted employment within the retail industry compared to other industries, we employed a fixed effects ordinary least squares (FEOLS) regression model. In this model, the variable "Employment_Category" serves as the dependent variable, representing employment status within the retail sector. The independent variable of interest is "Covid_Indicator," a binary variable denoting whether the observation period falls within the COVID-19 era or not. "Industry_Binary", another binary variable, indicates whether the industry is "Retail Trade" or not.
+
+```{r}
+# Convert Employment_Status to a categorical variable
+employment_data$Employment_Category <- ifelse(employment_data$Employment_Status %in% c(10, 12), TRUE, FALSE)
+
+# Create a binary variable for the type of industry to isolate Retail
+employment_data$Industry_binary <- ifelse(employment_data$Industry == "Retail Trade", 1,0)
+
+m_did <- feols(Employment_Category ~ Industry_binary * COVID_Indicator, data = employment_data)
+etable(m_did)
+```
+
+The table above shows the relationship between the variables stated previously. Firstly, the "Industry_Binary" coefficient represents the effect of being in the etail industry, compared to other industries, on the Employment_Category. A negative coefficient equal to -0.0108 suggests that being in the retail industry is associated with a decrease in the probability of being employed, holding other variables constant. Secondly, the "COVID_Indicator" coefficient represents the effect of COVID-19 on employment. The negative coefficient -0.0277 suggests that COVID-19 is associated with a decrease in employment, holding all else constant. Lastly, the interaction term between the "Industry_Binary" and "COVID_Indicator" variables indicates the combined effect of the retail industry and COVID-19 on employment. The positive coefficient of 0.0011 suggests that the effect of COVID-19 may have been associated with a more significant impact on the retail industry compared to other industries.
+
+The evidence presented in this table reinforces the evidence found in our first regression. COVID-19 is associated with a significant negative impact on the retail industry, even when compared to other industries. However, the interaction term is not statistically significant enough to determine whether this effect on the retail industry compared to other industries is correlated to COVID-19 only. There are likely many external factors that may have led to the observed relationship.
+
+## What has changed about *who* is working and earning money?
+
+For the last question, we make the assumption that anyone who is employed earns money and has money to spend. For this analysis, we used our previous regression and created a logistic model to observe the changes in who is working and earning money during the pandemic. We used State and Worker_Class as factor variables. It is important to note that "Worker_Class" is categorized as follows:
+
+14: Self-employed, incorporated employee
+
+22: Private, for profit employee
+
+23: Private, nonprofit employee
+
+25: Federal government employee
+
+27: State government employee
+
+28: Local government employee
+
+29: Unpaid family worker
+
+```{r}
+employment_data$State <- as.factor(employment_data$State)
+employment_data$Worker_Class <- as.factor(employment_data$Worker_Class)
+employment_data$COVID_Indicator <- as.factor(employment_data$COVID_Indicator)
+
+# Logistic regression model
+m3 <- glm(Employment_Category ~ COVID_Indicator + Age + Worker_Class, data = employment_data, family = "binomial")
+
+# Summary of the model to inspect coefficients and statistical significance
+summary(m3)
+```
+
+The coefficient related to "Worker_Class" are especially important in this analysis. The coefficients for the different categories represent the change in the log odds of being employed for each class. We can see that Worker_Class22 is the only a negative coefficient. It is equal to -0.1945, suggesting lower odds of employment during the pandemic for employees of private, for profit companies. Moreover, self-employed workers had greater odds of being employed during the pandemic as suggested by the coefficient for Worker_Class14, equal to 1.274.
+
+Overall, the pandemic was associated with better monetary outcomes for the self-employed employees.
